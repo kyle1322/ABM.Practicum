@@ -1,0 +1,175 @@
+﻿@model IEnumerable<Timesheets_APP.ViewModels.TimesheetViewModel>
+
+@{
+    ViewData["Title"] = "Timesheets";
+    Layout = "_Layout";
+
+    // pre-fill filters from your controller / query string
+    var filterDate = (string)ViewData["FilterDate"] ?? "";
+    var empIdFilter = ViewContext.HttpContext.Request.Query["empId"].FirstOrDefault() ?? "";
+    var empNameFilter = ViewContext.HttpContext.Request.Query["empName"].FirstOrDefault() ?? "";
+}
+
+<h1>Timesheets</h1>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link active" href="#">Timesheets</a>
+    </li>
+    <!-- other tabs here -->
+    <li class="nav-item ml-auto">
+        <form asp-controller="Account" asp-action="Logout" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                Logout
+            </button>
+        </form>
+    </li>
+</ul>
+
+<!-- ↓ Filter form -->
+<form method="get" class="form-row align-items-end mb-3">
+    <div class="col-auto">
+        <label for="datePicker" class="mb-0">Date</label>
+        <input type="date" id="datePicker" name="date"
+               class="form-control" value="@filterDate"
+               style="width:20ch;" />
+    </div>
+
+    <div class="col-auto">
+        <label for="empIdFilter" class="mb-0">Emp ID</label>
+        <input type="text" id="empIdFilter" name="empId"
+               class="form-control" value="@empIdFilter"
+               style="width:10ch;"
+               placeholder="e.g. 42" />
+    </div>
+
+    <div class="col-auto">
+        <label for="empNameFilter" class="mb-0">Name</label>
+        <input type="text" id="empNameFilter" name="empName"
+               class="form-control" value="@empNameFilter"
+               style="width:20ch;"
+               placeholder="e.g. Smith" />
+    </div>
+
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a asp-action="Index" class="btn btn-secondary ml-2">Show All</a>
+    </div>
+</form>
+
+<!-- ↓ Your original Refresh button -->
+<button class="btn btn-outline-primary mb-3"
+        onclick="location.reload()">
+    Refresh Timesheet List
+</button>
+
+@* antiforgery token for your AJAX approve/reject *@
+@Html.AntiForgeryToken()
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th></th>              <!-- Action column for View Timesheet -->
+            <th>Employee ID</th>
+            <th>Employee Name</th>
+            <th>Timesheet Date</th>
+            <th>Approved</th>
+            <th>Last Modified</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var ts in Model)
+        {
+            <tr data-tsid="@ts.TsId">
+                <td>
+                    <!-- ← Your new View Timesheet link -->
+                    <a asp-controller="Admin"
+                       asp-action="ViewTimesheet"
+                       asp-route-tsId="@ts.TsId"
+                       class="btn btn-sm btn-link">
+                        View Timesheet
+                    </a>
+                </td>
+                <td>@ts.EmpId</td>
+                <td>@ts.EmpName</td>
+                <td>@ts.TsDate.ToString("yyyy-MM-dd")</td>
+                <td class="approval-cell"
+                    data-original='
+                            <label><input type="checkbox" class="approve-choice" data-choice="true"  /> Yes</label>
+                            <label><input type="checkbox" class="approve-choice" data-choice="false" /> No</label>
+                        '>
+                        <label><input type="checkbox" class="approve-choice" data-choice="true"  /> Yes</label>
+                        <label><input type="checkbox" class="approve-choice" data-choice="false" /> No</label>
+                    </td>
+                <td>@ts.Modified.ToString("yyyy-MM-dd HH:mm:ss")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts
+{
+    <script>
+        function bindApprovalChoices() {
+            document.querySelectorAll('.approve-choice').forEach(cb => {
+                cb.addEventListener('change', e => {
+                    const choice   = e.target.dataset.choice === 'true';
+                    const cell     = e.target.closest('.approval-cell');
+                    const row      = e.target.closest('tr');
+                    const tsId     = row.dataset.tsid;
+                    const original = cell.getAttribute('data-original');
+
+                    const prompt   = choice ? 'Approve Timesheet?' : 'Reject Timesheet?';
+                    const icon     = choice ? '✓' : '✗';
+                    const btnClass = choice ? 'btn-success' : 'btn-danger';
+
+                    cell.innerHTML = `
+                        <div>${prompt}</div>
+                        <button class="btn btn-sm ${btnClass} confirm-yes">
+                            ${icon} OK
+                        </button>
+                        <button class="btn btn-sm btn-secondary confirm-no">
+                            Cancel
+                        </button>
+                    `;
+
+                    cell.querySelector('.confirm-yes').addEventListener('click', () => {
+                        fetch('@Url.Action("ApproveTimesheet", "Admin")', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken':
+                                  document.querySelector('input[name="__RequestVerificationToken"]').value
+                            },
+                            body: JSON.stringify({ tsId: tsId, approved: choice })
+                        })
+                        .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+                        .then(json => {
+                            if (json.success) {
+                                cell.innerHTML = choice
+                                    ? '<span class="text-success font-weight-bold">Timesheet Approved</span>'
+                                    : '<span class="text-danger font-weight-bold">Timesheet Rejected</span>';
+                            } else {
+                                throw new Error('Server returned success=false');
+                            }
+                        })
+                        .catch(err => {
+                            console.error('ApproveTimesheet failed:', err);
+                            alert('Save failed: ' + err.message);
+                            cell.innerHTML = original;
+                            bindApprovalChoices();
+                        });
+                    });
+
+                    cell.querySelector('.confirm-no').addEventListener('click', () => {
+                        cell.innerHTML = original;
+                        bindApprovalChoices();
+                    });
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', bindApprovalChoices);
+    </script>
+}

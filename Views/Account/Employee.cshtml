@@ -1,0 +1,20 @@
+﻿@model Timesheets_APP.ViewModels.EmployeeLoginViewModel
+
+@{
+    ViewData["Title"] = "Employee Login";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<form asp-action="Employee" method="post">
+    <div class="form-group">
+        <label asp-for="EmpId">Employee ID</label>
+        <input asp-for="EmpId" class="form-control" type="number" />
+        <span asp-validation-for="EmpId" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Continue</button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,79 @@
+﻿@model Timesheets_APP.ViewModels.EmployeeDashboardViewModel
+
+@{
+    ViewData["Title"] = "Employee Dashboard";
+    // grab “Index” vs. “AddTimesheet” from route data
+    var current = (ViewContext.RouteData.Values["action"] ?? "")
+                  .ToString();
+}
+
+<h2>Welcome, @Model.EmpName.</h2>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(current == "Index" ? "active" : "")"
+           asp-action="Index"
+           asp-route-empId="@Model.EmpId">
+            Your Timesheets
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(current == "AddTimesheet" ? "active" : "")"
+           asp-action="AddTimesheet"
+           asp-route-empId="@Model.EmpId">
+            Add Timesheet
+        </a>
+    </li>
+</ul>
+
+<div class="d-flex mb-3">
+    <form asp-controller="Account"
+          asp-action="Logout"
+          method="post"
+          class="mr-2">
+        @Html.AntiForgeryToken()
+        <button type="submit"
+                class="btn btn-outline-danger btn-sm">
+            Logout
+        </button>
+    </form>
+
+    <form asp-action="Index"
+          asp-route-empId="@Model.EmpId"
+          method="get">
+        <button type="submit"
+                class="btn btn-secondary btn-sm">
+            Refresh Timesheets
+        </button>
+    </form>
+</div>
+
+<table class="table table-bordered">
+    <thead class="thead-light">
+        <tr>
+            <th></th>
+            <th>Employee ID</th>
+            <th>Employee Name</th>
+            <th>Timesheet Date</th>
+            <th>Approved</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var ts in Model.Timesheets)
+        {
+            <tr>
+                <td>
+                    <a asp-action="ViewTimesheet"
+                       asp-route-empId="@Model.EmpId"
+                       asp-route-tsId="@ts.TsId">
+                        View Timesheet
+                    </a>
+                </td>
+                <td>@ts.EmpId</td>
+                <td>@ts.EmpName</td>
+                <td>@ts.Date.ToString("yyyy-MM-dd")</td>
+                <td>@(ts.Approved ? "Yes" : "No")</td>
+            </tr>
+        }
+    </tbody>
+</table>

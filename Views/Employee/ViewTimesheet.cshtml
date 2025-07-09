@@ -1,0 +1,95 @@
+﻿@model Timesheets_APP.ViewModels.TimesheetViewModel
+
+@{
+    ViewData["Title"] = $"Timesheet Details for {Model.EmpName}";
+    Layout = "_Layout";
+}
+
+<h2>Timesheet Details for @Model.EmpName</h2>
+
+<form asp-action="ViewTimesheet" method="post">
+    @Html.AntiForgeryToken()
+    <input asp-for="EmpId" type="hidden" />
+    <input asp-for="TsId" type="hidden" />
+
+    <h4>Task Breakdown</h4>
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>From</th>
+                <th>To</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.Items.Count; i++)
+            {
+                <tr>
+                    <td>
+                        <input asp-for="Items[@i].TimeFrom"
+                               class="form-control"
+                               readonly />
+                    </td>
+                    <td>
+                        <input asp-for="Items[@i].TimeOut"
+                               class="form-control"
+                               readonly />
+                    </td>
+                    <td>
+                        <input asp-for="Items[@i].Description"
+                               class="form-control" />
+                    </td>
+
+                    @* keep the item’s primary key so we can save *@
+                    <input asp-for="Items[@i].TrId" type="hidden" />
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-primary">
+        Save Changes
+    </button>
+    <a asp-action="Index"
+       asp-route-empId="@Model.EmpId"
+       class="btn btn-secondary ml-2">
+        Back to List
+    </a>
+</form>
+
+<hr />
+
+<dl class="row">
+    <dt class="col-sm-3">Timesheet ID</dt>
+    <dd class="col-sm-9">@Model.TsId</dd>
+
+    <dt class="col-sm-3">Employee ID</dt>
+    <dd class="col-sm-9">@Model.EmpId</dd>
+
+    <dt class="col-sm-3">Employee Name</dt>
+    <dd class="col-sm-9">@Model.EmpName</dd>
+
+    <dt class="col-sm-3">Date</dt>
+    <dd class="col-sm-9">@Model.TsDate:yyyy-MM-dd</dd>
+
+    <dt class="col-sm-3">Start Time</dt>
+    <dd class="col-sm-9">@Model.StartTime</dd>
+
+    <dt class="col-sm-3">End Time</dt>
+    <dd class="col-sm-9">@Model.EndTime</dd>
+
+    <dt class="col-sm-3">Hours</dt>
+    <dd class="col-sm-9">@Model.Hours</dd>
+
+    <dt class="col-sm-3">Minutes</dt>
+    <dd class="col-sm-9">@Model.Minutes</dd>
+
+    <dt class="col-sm-3">Overtime?</dt>
+    <dd class="col-sm-9">@Model.Overtime</dd>
+
+    <dt class="col-sm-3">Approved?</dt>
+    <dd class="col-sm-9">@(Model.Approved ? "Yes" : "No")</dd>
+
+    <dt class="col-sm-3">Last Modified</dt>
+    <dd class="col-sm-9">@Model.Modified:yyyy-MM-dd HH:mm:ss</dd>
+</dl>

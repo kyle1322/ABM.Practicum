@@ -1,0 +1,36 @@
+﻿@* in Views/Employee/Login.cshtml *@
+@model Timesheets_APP.ViewModels.EmployeeLoginViewModel
+
+@{
+    ViewData["Title"] = "Employee Login";
+}
+
+<h2>Employee Login</h2>
+
+@* Display ModelState error message *@
+@if (!ViewData.ModelState.IsValid)
+{
+    foreach (var modelError in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+    {
+        <div style="color:red; font-weight:bold;">
+            @modelError.ErrorMessage
+        </div>
+    }
+}
+
+<form asp-action="Login" method="post">
+    <div class="form-group">
+        <label asp-for="EmpId"></label>
+        <input asp-for="EmpId" class="form-control" />
+        <span asp-validation-for="EmpId" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">
+        Log In
+    </button>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

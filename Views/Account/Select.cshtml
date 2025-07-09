@@ -1,0 +1,18 @@
+﻿@* in Views/Account/Select.cshtml *@
+@{
+    ViewData["Title"] = "Choose Login";
+}
+
+<h2>Choose Login</h2>
+
+<a asp-controller="Admin"
+   asp-action="Login"
+   class="btn btn-primary">
+    Login as Admin
+</a>
+
+<a asp-controller="Employee"
+   asp-action="Login"
+   class="btn btn-secondary">
+    Login as Employee
+</a>
