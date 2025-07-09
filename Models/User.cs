@@ -7,7 +7,7 @@ namespace Timesheets_APP.Models
     [Table("users")]
     public class User
     {
-        [Key]  // 👈 THIS makes it the primary key
+        [Key] 
         [Column("login_id")]
         [StringLength(64)]
         public string LoginId { get; set; } = null!;

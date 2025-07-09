@@ -1,5 +1,4 @@
-﻿@* in Views/Employee/Login.cshtml *@
-@model Timesheets_APP.ViewModels.EmployeeLoginViewModel
+﻿@model Timesheets_APP.ViewModels.EmployeeLoginViewModel
 
 @{
     ViewData["Title"] = "Employee Login";
@@ -7,7 +6,6 @@
 
 <h2>Employee Login</h2>
 
-@* Display ModelState error message *@
 @if (!ViewData.ModelState.IsValid)
 {
     foreach (var modelError in ViewData.ModelState.Values.SelectMany(v => v.Errors))

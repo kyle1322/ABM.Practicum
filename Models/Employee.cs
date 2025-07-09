@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace Timesheets_APP.Models
 {
@@ -39,7 +38,6 @@ namespace Timesheets_APP.Models
         [Column("modified", TypeName = "datetime")]
         public DateTime Modified { get; set; }
 
-        // navigation to timesheets
         public virtual ICollection<Timesheet> Timesheets { get; set; } = new List<Timesheet>();
     }
 }

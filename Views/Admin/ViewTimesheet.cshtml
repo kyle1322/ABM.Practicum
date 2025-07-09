@@ -57,7 +57,7 @@
             </td>
             <td>
                         <input asp-for="Items[@i].TimeOut"
-                               value="@Model.Items[i].TimeFrom24"
+                               value="@Model.Items[i].TimeOut24"
                                type="time"
                                class="form-control" />
             </td>
@@ -65,7 +65,7 @@
               <input asp-for="Items[@i].Description"
                      class="form-control" />
             </td>
-            @* also post back each row’s key *@
+           
             <input asp-for="Items[@i].TrId" type="hidden" />
           </tr>
       }

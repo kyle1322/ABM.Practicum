@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace Timesheets_APP.Helpers // <-- match your actual namespace
+namespace Timesheets_APP.Helpers
 {
     public static class SecurityHelper
     {
@@ -10,7 +10,7 @@ namespace Timesheets_APP.Helpers // <-- match your actual namespace
             using var md5 = MD5.Create();
             var inputBytes = Encoding.UTF8.GetBytes(input);
             var hashBytes = md5.ComputeHash(inputBytes);
-            return Convert.ToHexString(hashBytes); // requires .NET 5 or later
+            return Convert.ToHexString(hashBytes); 
         }
     }
 }

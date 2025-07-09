@@ -9,31 +9,25 @@ namespace Timesheets_APP.Data
             : base(options)
         {
         }
-        public DbSet<User> Users { get; set; }
 
+        public DbSet<User> Users { get; set; }
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Timesheet> Timesheets { get; set; }
         public DbSet<TimesheetsItem> TimesheetsItems { get; set; }
-        // drop your old `DbSet<User>` since IdentityUser lives in ApplicationDbContext
 
-        protected override void OnModelCreating
-            (ModelBuilder builder)
+        protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            // your existing configuration for Employees, Timesheets, etc.
             builder.Entity<Employee>(e =>
             {
                 e.HasKey(x => x.EmpId);
                 e.Property(x => x.Modified)
-                 .HasDefaultValueSql("getdate()");
+                    .HasDefaultValueSql("getdate()");
                 e.Property(x => x.Overtime)
-                 .HasDefaultValueSql("('N')")
-                 .IsFixedLength();
-                // ...
+                    .HasDefaultValueSql("('N')")
+                    .IsFixedLength();
             });
-
-            // …and so on for Timesheet and TimesheetsItem…
         }
     }
 }

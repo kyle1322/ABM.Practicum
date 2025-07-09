@@ -1,7 +1,6 @@
-﻿// ViewModels/EmployeeDashboardViewModel.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
-using Timesheets_APP.Models;  // wherever your Timesheet model lives
+using Timesheets_APP.Models; 
 
 namespace Timesheets_APP.ViewModels
 {

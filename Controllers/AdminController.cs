@@ -18,16 +18,19 @@ namespace Timesheets_APP.Controllers
     public class AdminController : Controller
     {
         private readonly TimesheetDbContext _db;
-        public AdminController(TimesheetDbContext db)
-            => _db = db;
 
-        // ─── GET: /Admin/Login
+        public AdminController(TimesheetDbContext db)
+        {
+            _db = db;
+        }
+
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Login()
-            => View(new AdminLoginViewModel());
+        {
+            return View(new AdminLoginViewModel());
+        }
 
-        // ─── POST: /Admin/Login
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -37,7 +40,7 @@ namespace Timesheets_APP.Controllers
                 return View(vm);
 
             var user = await _db.Users
-                                .SingleOrDefaultAsync(u => u.LoginId == vm.Username);
+                .SingleOrDefaultAsync(u => u.LoginId == vm.Username);
 
             if (user != null && ComputeMd5(vm.Password) == user.Password)
             {
@@ -46,14 +49,8 @@ namespace Timesheets_APP.Controllers
                     new Claim(ClaimTypes.Name, user.LoginId),
                     new Claim(ClaimTypes.Role, "Admin")
                 };
-                var ci = new ClaimsIdentity(
-                    claims,
-                    CookieAuthenticationDefaults.AuthenticationScheme
-                );
-                await HttpContext.SignInAsync(
-                    IdentityConstants.ApplicationScheme,
-                    new ClaimsPrincipal(ci)
-                );
+                var ci = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, new ClaimsPrincipal(ci));
                 return RedirectToAction(nameof(Index));
             }
 
@@ -61,29 +58,21 @@ namespace Timesheets_APP.Controllers
             return View(vm);
         }
 
-        // ─── POST: /Admin/Logout
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme
-            );
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction(nameof(Login));
         }
 
-        // ─── GET: /Admin/Index
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Index(
-            DateTime? date,
-            int? empId,
-            string empName
-        )
+        public async Task<IActionResult> Index(DateTime? date, int? empId, string empName)
         {
             var query = _db.Timesheets
-                           .Include(t => t.Emp)
-                           .Include(t => t.TimesheetsItems)
-                           .AsQueryable();
+                .Include(t => t.Emp)
+                .Include(t => t.TimesheetsItems)
+                .AsQueryable();
 
             if (date.HasValue)
             {
@@ -114,14 +103,14 @@ namespace Timesheets_APP.Controllers
                     Overtime = t.Overtime == "Y",
                     Modified = t.Modified,
                     Items = t.TimesheetsItems
-                                  .Select(i => new TimesheetsItemViewModel
-                                  {
-                                      TrId = i.TrId,
-                                      TimeFrom = i.TimeFrom,
-                                      TimeOut = i.TimeOut,
-                                      Description = i.Description
-                                  })
-                                  .ToList()
+                        .Select(i => new TimesheetsItemViewModel
+                        {
+                            TrId = i.TrId,
+                            TimeFrom = i.TimeFrom,
+                            TimeOut = i.TimeOut,
+                            Description = i.Description
+                        })
+                        .ToList()
                 })
                 .ToListAsync();
 
@@ -129,16 +118,17 @@ namespace Timesheets_APP.Controllers
             return View(list);
         }
 
-        // ─── GET: /Admin/ViewTimesheet?tsId=##
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> ViewTimesheet(int tsId)
         {
             var ts = await _db.Timesheets
-                              .Include(t => t.Emp)
-                              .Include(t => t.TimesheetsItems)
-                              .FirstOrDefaultAsync(t => t.TsId == tsId);
-            if (ts == null) return NotFound();
+                .Include(t => t.Emp)
+                .Include(t => t.TimesheetsItems)
+                .FirstOrDefaultAsync(t => t.TsId == tsId);
+
+            if (ts == null)
+                return NotFound();
 
             var start = TimeSpan.Parse(ts.StartTime);
             var end = TimeSpan.Parse(ts.EndTime);
@@ -158,39 +148,36 @@ namespace Timesheets_APP.Controllers
                 Overtime = ts.Overtime == "Y",
                 Modified = ts.Modified,
                 Items = ts.TimesheetsItems
-                             .Select(i => new TimesheetsItemViewModel
-                             {
-                                 TrId = i.TrId,
-                                 TimeFrom = i.TimeFrom,
-                                 TimeOut = i.TimeOut,
-                                 Description = i.Description
-                             })
-                             .ToList()
+                    .Select(i => new TimesheetsItemViewModel
+                    {
+                        TrId = i.TrId,
+                        TimeFrom = i.TimeFrom,
+                        TimeOut = i.TimeOut,
+                        Description = i.Description
+                    })
+                    .ToList()
             };
 
             return View(vm);
         }
 
-        // ─── POST: /Admin/ViewTimesheet
         [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ViewTimesheet(TimesheetViewModel vm)
         {
             var ts = await _db.Timesheets.FindAsync(vm.TsId);
-            if (ts == null) return NotFound();
+            if (ts == null)
+                return NotFound();
 
-            // update parent shift
             ts.StartTime = vm.StartTime;
             ts.EndTime = vm.EndTime;
-            var span = TimeSpan.Parse(vm.EndTime)
-                           - TimeSpan.Parse(vm.StartTime);
+            var span = TimeSpan.Parse(vm.EndTime) - TimeSpan.Parse(vm.StartTime);
             ts.Hours = (byte)span.Hours;
             ts.Minutes = (byte)span.Minutes;
             ts.TsApproved = vm.Approved ? "Y" : "N";
             ts.Modified = DateTime.Now;
 
-            // update each hourly row
             foreach (var item in vm.Items)
             {
                 var ent = await _db.TimesheetsItems.FindAsync(item.TrId);
@@ -206,7 +193,6 @@ namespace Timesheets_APP.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ─── GET: /Admin/EditTimesheet?tsId=##
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> EditTimesheet(int tsId)
@@ -215,7 +201,12 @@ namespace Timesheets_APP.Controllers
                 .Include(t => t.Emp)
                 .Include(t => t.TimesheetsItems)
                 .FirstOrDefaultAsync(t => t.TsId == tsId);
-            if (ts == null) return NotFound();
+
+            if (ts == null)
+                return NotFound();
+
+            var start = TimeSpan.Parse(ts.StartTime);
+            var end = TimeSpan.Parse(ts.EndTime);
 
             var vm = new TimesheetViewModel
             {
@@ -225,69 +216,69 @@ namespace Timesheets_APP.Controllers
                 TsDate = ts.TsDate,
                 StartTime = ts.StartTime,
                 EndTime = ts.EndTime,
-                Hours = ts.Hours,
-                Minutes = ts.Minutes,
+                Hours = (byte)(end - start).Hours,
+                Minutes = (byte)(end - start).Minutes,
                 Overtime = ts.Overtime == "Y",
                 Approved = ts.TsApproved == "Y",
                 Modified = ts.Modified,
                 Items = ts.TimesheetsItems
-                             .Select(i => new TimesheetsItemViewModel
-                             {
-                                 TrId = i.TrId,
-                                 TimeFrom = i.TimeFrom,
-                                 TimeOut = i.TimeOut,
-                                 Description = i.Description
-                             })
-                             .ToList()
+                    .Select(i => new TimesheetsItemViewModel
+                    {
+                        TrId = i.TrId,
+                        TimeFrom = i.TimeFrom,
+                        TimeOut = i.TimeOut,
+                        Description = i.Description
+                    })
+                    .ToList()
             };
 
             return View(vm);
         }
 
-        // ─── POST: /Admin/EditTimesheet
         [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditTimesheet(TimesheetViewModel vm)
         {
-            var ts = await _db.Timesheets.FindAsync(vm.TsId);
-            if (ts == null) return NotFound();
+            if (!ModelState.IsValid)
+                return View(vm);
 
-            // update shift summary
+            var ts = await _db.Timesheets
+                .Include(t => t.TimesheetsItems)
+                .FirstOrDefaultAsync(t => t.TsId == vm.TsId);
+
+            if (ts == null)
+                return NotFound();
+
             ts.StartTime = vm.StartTime;
             ts.EndTime = vm.EndTime;
-            var span = TimeSpan.Parse(vm.EndTime)
-                           - TimeSpan.Parse(vm.StartTime);
-            ts.Hours = (byte)span.Hours;
-            ts.Minutes = (byte)span.Minutes;
+            var span2 = TimeSpan.Parse(vm.EndTime) - TimeSpan.Parse(vm.StartTime);
+            ts.Hours = (byte)span2.Hours;
+            ts.Minutes = (byte)span2.Minutes;
+            ts.Overtime = vm.Overtime ? "Y" : "N";
             ts.TsApproved = vm.Approved ? "Y" : "N";
             ts.Modified = DateTime.Now;
 
-            // update each hourly row
-            foreach (var item in vm.Items)
+            foreach (var slotVm in vm.Items)
             {
-                var ent = await _db.TimesheetsItems.FindAsync(item.TrId);
-                if (ent != null)
+                var slot = ts.TimesheetsItems.FirstOrDefault(i => i.TrId == slotVm.TrId);
+                if (slot != null)
                 {
-                    ent.TimeFrom = item.TimeFrom;
-                    ent.TimeOut = item.TimeOut;
-                    ent.Description = item.Description;
+                    slot.TimeFrom = slotVm.TimeFrom;
+                    slot.TimeOut = slotVm.TimeOut;
+                    slot.Description = slotVm.Description;
                 }
             }
 
             await _db.SaveChangesAsync();
-            return RedirectToAction(nameof(Index),
-                                    new { date = ts.TsDate });
+            return RedirectToAction(nameof(Index), new { date = ts.TsDate });
         }
 
-        // helper: compute MD5 hex
         private static string ComputeMd5(string input)
         {
             using var md5 = MD5.Create();
             var bytes = md5.ComputeHash(Encoding.UTF8.GetBytes(input));
-            return BitConverter.ToString(bytes)
-                               .Replace("-", "")
-                               .ToLowerInvariant();
+            return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
         }
     }
 }

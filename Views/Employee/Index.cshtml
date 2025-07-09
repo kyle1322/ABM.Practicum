@@ -2,7 +2,6 @@
 
 @{
     ViewData["Title"] = "Employee Dashboard";
-    // grab “Index” vs. “AddTimesheet” from route data
     var current = (ViewContext.RouteData.Values["action"] ?? "")
                   .ToString();
 }

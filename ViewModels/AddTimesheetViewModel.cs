@@ -17,7 +17,7 @@ namespace Timesheets_APP.ViewModels
         [Display(Name = "Timesheet Date")]
         public DateTime TsDate { get; set; }
 
-        // Populated in the controller with the last 14 days
+        
         public IEnumerable<SelectListItem> TsDateOptions { get; set; } = new List<SelectListItem>();
 
         [Required]

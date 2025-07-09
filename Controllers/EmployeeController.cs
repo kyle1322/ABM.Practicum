@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Linq;                                    // for Where/Select/ToList
+using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,13 +15,11 @@ namespace Timesheets_APP.Controllers
         public EmployeeController(ApplicationDbContext db)
             => _db = db;
 
-        // ─── GET: /Employee/Login
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Login()
             => View(new EmployeeLoginViewModel());
 
-        // ─── POST: /Employee/Login
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -37,12 +35,9 @@ namespace Timesheets_APP.Controllers
                 return View(vm);
             }
 
-            // TODO: issue your auth cookie/session here
-
             return RedirectToAction(nameof(Index), new { empId = vm.EmpId });
         }
 
-        // ─── GET: /Employee/Index?empId=#
         [HttpGet]
         public IActionResult Index(int empId)
         {
@@ -50,7 +45,6 @@ namespace Timesheets_APP.Controllers
             if (emp == null)
                 return RedirectToAction("Select", "Account");
 
-            // build a flat list of TimesheetViewModel
             var list = _db.Timesheets
                 .Where(ts => ts.EmpId == empId)
                 .Select(ts => new TimesheetViewModel
@@ -73,7 +67,6 @@ namespace Timesheets_APP.Controllers
             return View(vm);
         }
 
-        // ─── GET: /Employee/AddTimesheet?empId=#
         [HttpGet]
         public IActionResult AddTimesheet(int empId)
         {
@@ -81,7 +74,6 @@ namespace Timesheets_APP.Controllers
             if (emp == null)
                 return NotFound();
 
-            // prepare your date‐picker options, defaults, etc.
             var vm = new AddTimesheetViewModel
             {
                 EmpId = emp.EmpId,
@@ -103,16 +95,12 @@ namespace Timesheets_APP.Controllers
             return View(vm);
         }
 
-        // ─── POST: /Employee/AddTimesheet
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult AddTimesheet(AddTimesheetViewModel vm)
         {
             if (!ModelState.IsValid)
-            {
-                // repopulate TsDateOptions if needed...
                 return View(vm);
-            }
 
             var start = TimeSpan.Parse(vm.StartTime);
             var end = TimeSpan.Parse(vm.EndTime);
@@ -146,20 +134,19 @@ namespace Timesheets_APP.Controllers
             }
             _db.SaveChanges();
 
-            return RedirectToAction(nameof(Index),
-                                    new { empId = vm.EmpId });
+            return RedirectToAction(nameof(Index), new { empId = vm.EmpId });
         }
-
 
         [HttpGet]
         public IActionResult ViewTimesheet(int empId, int tsId)
         {
             var ts = _db.Timesheets
-                        .Include(t => t.TimesheetsItems)    // load the child rows
+                        .Include(t => t.TimesheetsItems)
                         .Include(t => t.Emp)
                         .FirstOrDefault(t => t.EmpId == empId && t.TsId == tsId);
 
-            if (ts == null) return NotFound();
+            if (ts == null)
+                return NotFound();
 
             var vm = new TimesheetViewModel
             {
@@ -174,17 +161,15 @@ namespace Timesheets_APP.Controllers
                 Minutes = ts.Minutes,
                 Overtime = ts.Overtime == "Y",
                 Modified = ts.Modified,
-
-                // NEW: map each TimesheetsItem into your view-model list
                 Items = ts.TimesheetsItems
-                              .Select(i => new TimesheetsItemViewModel
-                              {
-                                  TrId = i.TrId,
-                                  TimeFrom = i.TimeFrom,
-                                  TimeOut = i.TimeOut,
-                                  Description = i.Description
-                              })
-                              .ToList()
+                    .Select(i => new TimesheetsItemViewModel
+                    {
+                        TrId = i.TrId,
+                        TimeFrom = i.TimeFrom,
+                        TimeOut = i.TimeOut,
+                        Description = i.Description
+                    })
+                    .ToList()
             };
 
             return View(vm);
