@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Timesheets_APP.Data;
 using Timesheets_APP.ViewModels;
+using System.Text;
 
 namespace Timesheets_APP.Controllers
 {
@@ -236,6 +237,64 @@ namespace Timesheets_APP.Controllers
         }
 
         [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> ExportCsv(DateTime? date, int? empId, string empName)
+        {
+            // build the same base query as Index
+            var query = _db.Timesheets
+                .Include(t => t.Emp)
+                .Include(t => t.TimesheetsItems)
+                .AsQueryable();
+
+            if (date.HasValue)
+            {
+                var d = date.Value.Date;
+                query = query.Where(t => t.TsDate == d);
+            }
+
+            if (empId.HasValue)
+                query = query.Where(t => t.EmpId == empId.Value);
+
+            if (!string.IsNullOrWhiteSpace(empName))
+                query = query.Where(t => t.Emp.EmpName.Contains(empName));
+
+            var list = await query
+                .OrderBy(t => t.TsDate)
+                .ThenBy(t => t.StartTime)
+                .Select(t => new TimesheetViewModel
+                {
+                    TsId = t.TsId,
+                    EmpId = t.EmpId,
+                    EmpName = t.Emp.EmpName,
+                    TsDate = t.TsDate,
+                    Approved = t.TsApproved == "Y",
+                    StartTime = t.StartTime,
+                    EndTime = t.EndTime,
+                    Hours = t.Hours,
+                    Minutes = t.Minutes,
+                    Overtime = t.Overtime == "Y",
+                    Modified = t.Modified
+                })
+                .ToListAsync();
+
+            // build CSV
+            var csv = new StringBuilder();
+            csv.AppendLine("TsId,EmpId,EmpName,TsDate,Approved,StartTime,EndTime,Hours,Minutes,Overtime,Modified");
+            foreach (var t in list)
+            {
+                // wrap EmpName in quotes in case it has commas
+                csv.AppendLine(
+                    $"{t.TsId},{t.EmpId},\"{t.EmpName}\"," +
+                    $"{t.TsDate:yyyy-MM-dd},{t.Approved}," +
+                    $"{t.StartTime},{t.EndTime},{t.Hours},{t.Minutes}," +
+                    $"{t.Overtime},{t.Modified:O}");
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(csv.ToString());
+            return File(bytes, "text/csv", "timesheets.csv");
+        }
+
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditTimesheet(TimesheetViewModel vm)
@@ -272,6 +331,65 @@ namespace Timesheets_APP.Controllers
 
             await _db.SaveChangesAsync();
             return RedirectToAction(nameof(Index), new { date = ts.TsDate });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> DeleteTimesheet(int tsId)
+        {
+            var entry = await _db.Timesheets
+                .Include(t => t.TimesheetsItems)
+                .FirstOrDefaultAsync(t => t.TsId == tsId);
+            if (entry != null)
+            {
+                _db.Timesheets.Remove(entry);
+                await _db.SaveChangesAsync();
+            }
+            return RedirectToAction("Index");
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> ExportTimesheetCsv(int tsId)
+        {
+            // load the timesheet + related items
+            var ts = await _db.Timesheets
+                .Include(t => t.Emp)
+                .Include(t => t.TimesheetsItems)
+                .FirstOrDefaultAsync(t => t.TsId == tsId);
+
+            if (ts == null)
+                return NotFound();
+
+            // recalc total span just like in ViewTimesheet
+            var start = TimeSpan.Parse(ts.StartTime);
+            var end = TimeSpan.Parse(ts.EndTime);
+            var span = end - start;
+
+            // build CSV
+            var sb = new StringBuilder();
+            // main timesheet header & row
+            sb.AppendLine("TsId,EmpId,EmpName,TsDate,Approved,StartTime,EndTime,Hours,Minutes,Modified");
+            sb.AppendLine(
+                $"{ts.TsId},{ts.EmpId},\"{ts.Emp.EmpName}\"," +
+                $"{ts.TsDate:yyyy-MM-dd}," +
+                $"{(ts.TsApproved == "Y")}," +
+                $"{ts.StartTime},{ts.EndTime}," +
+                $"{span.Hours},{span.Minutes}," +
+                $"{ts.Modified:O}"
+            );
+            sb.AppendLine();                        // blank separator
+                                                    // items header
+            sb.AppendLine("TimeFrom,TimeOut,Description");
+            foreach (var i in ts.TimesheetsItems.OrderBy(x => x.TimeFrom))
+            {
+                sb.AppendLine(
+                    $"{i.TimeFrom},{i.TimeOut},\"{i.Description}\""
+                );
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+            return File(bytes, "text/csv", $"timesheet_{tsId}.csv");
         }
 
         private static string ComputeMd5(string input)

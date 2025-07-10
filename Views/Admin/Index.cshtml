@@ -47,6 +47,15 @@
     </div>
 </form>
 
+<form method="get" asp-controller="Admin" asp-action="ExportCsv" class="form-inline mb-3">
+    <input type="hidden" name="date" value="@filterDate" />
+    <input type="hidden" name="empId" value="@empIdFilter" />
+    <input type="hidden" name="empName" value="@empNameFilter" />
+    <button type="submit" class="btn btn-secondary ml-2">
+        Export CSV
+    </button>
+</form>
+
 <button class="btn btn-outline-primary mb-3" onclick="location.reload()">
     Refresh Timesheet List
 </button>
@@ -54,10 +63,13 @@
 <table class="table table-bordered">
     <thead>
         <tr>
-            <th></th>
+            <th></th>    <!-- delete -->
+            <th></th>    <!-- view -->
             <th>Employee ID</th>
             <th>Employee Name</th>
             <th>Timesheet Date</th>
+            <th>Hours</th>
+            <th>Minutes</th>
             <th>Approved</th>
             <th>Last Modified</th>
         </tr>
@@ -66,6 +78,16 @@
         @foreach (var ts in Model)
         {
             <tr>
+                <!-- delete icon -->
+                <td>
+                    <a href='@Url.Action("DeleteTimesheet", "Admin", new { tsId = ts.TsId })'
+                       onclick="return confirm('Delete timesheet for @ts.EmpName?');"
+                       title="Delete this timesheet"
+                       style="color:crimson; text-decoration:none;">
+                        🗑️
+                    </a>
+                </td>
+                <!-- view link -->
                 <td>
                     <a asp-controller="Admin"
                        asp-action="ViewTimesheet"
@@ -77,6 +99,8 @@
                 <td>@ts.EmpId</td>
                 <td>@ts.EmpName</td>
                 <td>@ts.TsDate.ToString("yyyy-MM-dd")</td>
+                <td>@ts.Hours</td>
+                <td>@ts.Minutes</td>
                 <td>
                     @if (ts.Approved)
                     {

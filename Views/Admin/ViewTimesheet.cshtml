@@ -36,6 +36,23 @@
     </div>
   </div>
 
+    <div class="form-row mb-4">
+        <div class="col-md-3">
+            <label class="mb-0">Total Hours</label>
+            <input type="text"
+                   readonly
+                   class="form-control-plaintext"
+                   value="@Model.Hours" />
+        </div>
+        <div class="col-md-3">
+            <label class="mb-0">Total Minutes</label>
+            <input type="text"
+                   readonly
+                   class="form-control-plaintext"
+                   value="@Model.Minutes" />
+        </div>
+    </div>
+
   <h4>Time Entries</h4>
   <table class="table table-sm">
     <thead>
@@ -78,4 +95,12 @@
   <a asp-action="Index" class="btn btn-secondary ml-2">
     Back to List
   </a>
+
+    @* new export button *@
+    <a asp-action="ExportTimesheetCsv"
+       asp-controller="Admin"
+       asp-route-tsId="@Model.TsId"
+       class="btn btn-outline-secondary ml-2">
+        Export CSV
+    </a>
 </form>
